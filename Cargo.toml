@@ -1,0 +1,45 @@
+[package]
+name = "depx"
+version = "0.1.0"
+edition = "2021"
+description = "Intelligent dependency analyzer for JavaScript/TypeScript projects"
+license = "MIT"
+repository = "https://github.com/ruidosujeira/depx"
+homepage = "https://github.com/ruidosujeira/depx"
+readme = "README.md"
+keywords = ["javascript", "typescript", "npm", "dependencies", "analyzer"]
+categories = ["command-line-utilities", "development-tools"]
+
+[dependencies]
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# JS/TS parsing
+oxc_parser = "0.44"
+oxc_span = "0.44"
+oxc_allocator = "0.44"
+oxc_ast = "0.44"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+# Error handling & diagnostics
+thiserror = "2"
+miette = { version = "7", features = ["fancy"] }
+
+# Async & HTTP
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
+
+# Utilities
+walkdir = "2"
+ignore = "0.4"
+petgraph = "0.6"
+semver = "1"
+colored = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
