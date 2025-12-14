@@ -1,5 +1,8 @@
 # depx
 
+[![Crates.io](https://img.shields.io/crates/v/depx.svg)](https://crates.io/crates/depx)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Understand what's in your node_modules.**
 
 <p align="center">
