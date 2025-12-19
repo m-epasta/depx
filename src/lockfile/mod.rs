@@ -1,3 +1,4 @@
+mod cargo;
 mod npm;
 
 use std::collections::HashMap;
@@ -7,6 +8,7 @@ use miette::{bail, Result};
 
 use crate::types::Package;
 
+pub use cargo::CargoLockfileParser;
 pub use npm::NpmLockfileParser;
 
 /// Unified lockfile parser that auto-detects the lockfile type
@@ -16,11 +18,12 @@ pub struct LockfileParser {
     lockfile_type: LockfileType,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LockfileType {
     Npm,
     Pnpm,
     Yarn,
+    Cargo,
 }
 
 impl LockfileParser {
@@ -50,15 +53,29 @@ impl LockfileParser {
             LockfileType::Yarn => {
                 bail!("yarn lockfile support coming soon")
             }
+            LockfileType::Cargo => {
+                let parser = CargoLockfileParser::new(&self.lockfile_path);
+                parser.parse()
+            }
         }
     }
 
     pub fn lockfile_type(&self) -> LockfileType {
         self.lockfile_type
     }
+
+    pub fn lockfile_path(&self) -> &Path {
+        &self.lockfile_path
+    }
 }
 
 fn detect_lockfile(root: &Path) -> Result<(PathBuf, LockfileType)> {
+    // Check for Cargo.lock (Rust projects)
+    let cargo_lock = root.join("Cargo.lock");
+    if cargo_lock.exists() {
+        return Ok((cargo_lock, LockfileType::Cargo));
+    }
+
     // Check for npm
     let npm_lock = root.join("package-lock.json");
     if npm_lock.exists() {
@@ -78,7 +95,7 @@ fn detect_lockfile(root: &Path) -> Result<(PathBuf, LockfileType)> {
     }
 
     bail!(
-        "No lockfile found in {}. Expected one of: package-lock.json, pnpm-lock.yaml, yarn.lock",
+        "No lockfile found in {}. Expected one of: Cargo.lock, package-lock.json, pnpm-lock.yaml, yarn.lock",
         root.display()
     )
 }

@@ -1,7 +1,9 @@
 use colored::Colorize;
 
+use crate::duplicates::suggest_resolution;
 use crate::types::{
-    DeprecatedPackage, ImportMap, PackageExplanation, Severity, UsageAnalysis, Vulnerability,
+    DeprecatedPackage, DuplicateAnalysis, DuplicateSeverity, ImportMap, PackageExplanation,
+    Severity, UsageAnalysis, Vulnerability,
 };
 
 /// Reporter for formatted terminal output
@@ -369,6 +371,160 @@ impl Reporter {
         }
 
         println!();
+    }
+
+    /// Report duplicate dependencies
+    pub fn report_duplicates(&self, analysis: &DuplicateAnalysis) {
+        println!();
+
+        if analysis.duplicates.is_empty() {
+            println!(
+                "{}",
+                "No duplicate dependencies found!".green().bold()
+            );
+            return;
+        }
+
+        println!(
+            "{}",
+            "Duplicate Dependencies Analysis".bold().underline()
+        );
+        println!();
+
+        // Summary
+        let stats = &analysis.stats;
+        println!("{}", "Summary".bold());
+        println!(
+            "  {} crates with multiple versions",
+            stats.total_duplicates.to_string().yellow()
+        );
+        if stats.high_severity > 0 {
+            println!(
+                "  {} {}",
+                stats.high_severity.to_string().red().bold(),
+                "high severity (3+ versions)".red()
+            );
+        }
+        if stats.medium_severity > 0 {
+            println!(
+                "  {} {}",
+                stats.medium_severity.to_string().yellow(),
+                "medium severity (different major versions)".yellow()
+            );
+        }
+        if stats.low_severity > 0 {
+            println!(
+                "  {} {}",
+                stats.low_severity.to_string().dimmed(),
+                "low severity (same major version)".dimmed()
+            );
+        }
+        println!(
+            "  {} extra compile units",
+            stats.extra_compile_units.to_string().cyan()
+        );
+        println!();
+
+        // Group by severity
+        let high: Vec<_> = analysis
+            .duplicates
+            .iter()
+            .filter(|d| d.severity == DuplicateSeverity::High)
+            .collect();
+        let medium: Vec<_> = analysis
+            .duplicates
+            .iter()
+            .filter(|d| d.severity == DuplicateSeverity::Medium)
+            .collect();
+        let low: Vec<_> = analysis
+            .duplicates
+            .iter()
+            .filter(|d| d.severity == DuplicateSeverity::Low)
+            .collect();
+
+        // High severity
+        if !high.is_empty() {
+            println!("{}", "HIGH SEVERITY".red().bold());
+            for group in high {
+                self.print_duplicate_group(group);
+            }
+            println!();
+        }
+
+        // Medium severity
+        if !medium.is_empty() {
+            println!("{}", "MEDIUM SEVERITY".yellow().bold());
+            for group in medium {
+                self.print_duplicate_group(group);
+            }
+            println!();
+        }
+
+        // Low severity (only in verbose mode)
+        if self.verbose && !low.is_empty() {
+            println!("{}", "LOW SEVERITY".dimmed());
+            for group in low {
+                self.print_duplicate_group(group);
+            }
+            println!();
+        } else if !low.is_empty() {
+            println!(
+                "  {} {} low severity duplicates (use --verbose to show)",
+                "+".dimmed(),
+                low.len()
+            );
+            println!();
+        }
+
+        // Tip
+        println!(
+            "  {} {}",
+            "Tip:".dimmed(),
+            "Use `cargo tree -d` for detailed dependency tree".cyan()
+        );
+        println!();
+    }
+
+    fn print_duplicate_group(&self, group: &crate::types::DuplicateGroup) {
+        let severity_marker = match group.severity {
+            DuplicateSeverity::High => "!".red().bold(),
+            DuplicateSeverity::Medium => "~".yellow(),
+            DuplicateSeverity::Low => "-".dimmed(),
+        };
+
+        println!(
+            "  {} {} ({} versions)",
+            severity_marker,
+            group.name.cyan().bold(),
+            group.versions.len()
+        );
+
+        for version in &group.versions {
+            let dependents_str = if version.dependents.is_empty() {
+                "(root)".to_string()
+            } else if version.dependents.len() <= 3 || self.verbose {
+                format!("← {}", version.dependents.join(", "))
+            } else {
+                format!(
+                    "← {} +{} more",
+                    version.dependents[..2].join(", "),
+                    version.dependents.len() - 2
+                )
+            };
+
+            println!(
+                "      {} {}",
+                format!("v{}", version.version).white(),
+                dependents_str.dimmed()
+            );
+        }
+
+        // Show suggestion if available
+        if self.verbose {
+            if let Some(suggestion) = suggest_resolution(group) {
+                println!("      {} {}", "→".green(), suggestion.dimmed());
+            }
+        }
     }
 }
 

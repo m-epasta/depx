@@ -246,3 +246,84 @@ pub struct DeprecatedPackage {
     pub message: String,
     pub is_used: bool,
 }
+
+// ============================================================================
+// Duplicate Analysis Types
+// ============================================================================
+
+/// Represents a group of duplicate packages (same crate, different versions)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicateGroup {
+    /// The crate name
+    pub name: String,
+
+    /// All versions found in the lockfile
+    pub versions: Vec<DuplicateVersion>,
+
+    /// Severity level based on version differences
+    pub severity: DuplicateSeverity,
+}
+
+/// A specific version of a duplicated crate
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicateVersion {
+    /// The version string
+    pub version: String,
+
+    /// Packages that depend on this version
+    pub dependents: Vec<String>,
+
+    /// Number of transitive dependents
+    pub transitive_count: usize,
+}
+
+/// Severity of the duplicate based on version differences
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DuplicateSeverity {
+    /// Same major version, different minor/patch (usually fine)
+    Low,
+    /// Different major versions (potential issues)
+    Medium,
+    /// 3+ different major versions (likely problematic)
+    High,
+}
+
+impl std::fmt::Display for DuplicateSeverity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DuplicateSeverity::Low => write!(f, "low"),
+            DuplicateSeverity::Medium => write!(f, "medium"),
+            DuplicateSeverity::High => write!(f, "high"),
+        }
+    }
+}
+
+/// Result of analyzing duplicate dependencies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicateAnalysis {
+    /// All duplicate groups found
+    pub duplicates: Vec<DuplicateGroup>,
+
+    /// Summary statistics
+    pub stats: DuplicateStats,
+}
+
+/// Statistics about duplicates
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicateStats {
+    /// Total number of crates with duplicates
+    pub total_duplicates: usize,
+
+    /// Number of high severity duplicates
+    pub high_severity: usize,
+
+    /// Number of medium severity duplicates
+    pub medium_severity: usize,
+
+    /// Number of low severity duplicates
+    pub low_severity: usize,
+
+    /// Estimated additional compile units
+    pub extra_compile_units: usize,
+}

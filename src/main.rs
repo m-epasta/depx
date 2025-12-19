@@ -1,4 +1,5 @@
 mod analyzer;
+mod duplicates;
 mod graph;
 mod lockfile;
 mod reporter;
@@ -67,6 +68,21 @@ enum Commands {
         #[arg(default_value = ".")]
         path: PathBuf,
     },
+
+    /// Detect duplicate dependencies (multiple versions of same crate)
+    Duplicates {
+        /// Path to the project root
+        #[arg(default_value = ".")]
+        path: PathBuf,
+
+        /// Show detailed information for each duplicate
+        #[arg(short, long)]
+        verbose: bool,
+
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
 }
 
 #[tokio::main]
@@ -89,6 +105,9 @@ async fn main() -> Result<()> {
         }
         Commands::Deprecated { path } => {
             run_deprecated(&path).await?;
+        }
+        Commands::Duplicates { path, verbose, json } => {
+            run_duplicates(&path, verbose, json).await?;
         }
     }
 
@@ -187,6 +206,29 @@ async fn run_deprecated(path: &PathBuf) -> Result<()> {
     let deprecated = vulnerability::check_deprecated(&installed_packages).await?;
 
     reporter.report_deprecated(&deprecated);
+
+    Ok(())
+}
+
+async fn run_duplicates(path: &PathBuf, verbose: bool, json: bool) -> Result<()> {
+    let reporter = if verbose {
+        Reporter::new().verbose()
+    } else {
+        Reporter::new()
+    };
+
+    reporter.status("Analyzing", &format!("duplicates at {}", path.display()));
+
+    let analyzer = duplicates::DuplicateAnalyzer::new(path);
+    let analysis = analyzer.analyze()?;
+
+    if json {
+        let output = serde_json::to_string_pretty(&analysis)
+            .map_err(|e| miette::miette!("Failed to serialize JSON: {}", e))?;
+        println!("{}", output);
+    } else {
+        reporter.report_duplicates(&analysis);
+    }
 
     Ok(())
 }

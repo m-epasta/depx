@@ -1,13 +1,13 @@
 [package]
 name = "depx"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
-description = "Intelligent dependency analyzer for JavaScript/TypeScript projects"
+description = "Intelligent dependency analyzer for JavaScript/TypeScript and Rust projects"
 license = "MIT"
 repository = "https://github.com/ruidosujeira/depx"
 homepage = "https://github.com/ruidosujeira/depx"
 readme = "README.md"
-keywords = ["javascript", "typescript", "npm", "dependencies", "analyzer"]
+keywords = ["javascript", "typescript", "npm", "cargo", "dependencies"]
 categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
@@ -24,6 +24,7 @@ oxc_ast = "0.44"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
+toml = "0.8"
 
 # Error handling & diagnostics
 thiserror = "2"

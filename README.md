@@ -3,13 +3,13 @@
 [![Crates.io](https://img.shields.io/crates/v/depx.svg)](https://crates.io/crates/depx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Understand what's in your node_modules.**
+**Understand what's in your node_modules and Cargo.lock.**
 
 <p align="center">
   <img src="demo.gif" alt="depx demo" width="600">
 </p>
 
-A fast, intelligent dependency analyzer for JavaScript/TypeScript projects. Built in Rust for performance.
+A fast, intelligent dependency analyzer for JavaScript/TypeScript and Rust projects. Built in Rust for performance.
 
 ## Why depx?
 
@@ -93,6 +93,39 @@ $ depx deprecated
     This module is not supported, and leaks memory.
 ```
 
+### `depx duplicates` - Detect duplicate dependencies (Rust/Cargo)
+
+```bash
+$ depx duplicates
+
+Duplicate Dependencies Analysis
+
+Summary
+  14 crates with multiple versions
+  1 high severity (3+ versions)
+  2 medium severity (different major versions)
+  11 low severity (same major version)
+  16 extra compile units
+
+HIGH SEVERITY
+  ! windows-sys (4 versions)
+      v0.52.0 ← ring
+      v0.59.0 ← colored
+      v0.60.2 ← socket2, terminal_size
+      v0.61.2 ← anstyle-query, anstyle-wincon +7 more
+
+MEDIUM SEVERITY
+  ~ thiserror (2 versions)
+      v1.0.69 ← oxc-miette
+      v2.0.17 ← depx
+```
+
+Identifies when multiple versions of the same crate exist in your project, calculates the impact (extra compile units), and suggests which dependencies to update.
+
+**Options:**
+- `--verbose` / `-v` - Show all duplicates including low severity, with upgrade suggestions
+- `--json` - Output as JSON for programmatic use
+
 ## Features
 
 - **Fast** - Written in Rust, parses JS/TS with [oxc](https://oxc.rs)
@@ -102,7 +135,8 @@ $ depx deprecated
 
 ## Supported lockfiles
 
-- [x] `package-lock.json` (npm)
+- [x] `Cargo.lock` (Rust) - duplicates detection
+- [x] `package-lock.json` (npm) - full analysis
 - [ ] `pnpm-lock.yaml` (coming soon)
 - [ ] `yarn.lock` (coming soon)
 
