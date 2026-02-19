@@ -123,7 +123,7 @@ fn calculate_transitive_dependents(
     use std::collections::{HashSet, VecDeque};
 
     // First, we need a way to look up a package by its name@version key
-    // We can build this map once if we want to optimize, but for now we'll search
+    // We can build this map once if we want to optimize, but we'll search
     let mut reverse_graph: std::collections::HashMap<String, &Vec<String>> =
         std::collections::HashMap::new();
     for (name, versions) in packages_by_name {

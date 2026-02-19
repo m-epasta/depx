@@ -147,8 +147,8 @@ impl DependencyGraph {
         let chains = self.find_dependency_chains(*pkg_idx);
 
         let is_dev_path = chains.iter().any(|chain| {
-            chain.first().map_or(false, |root| {
-                self.packages.get(root).map_or(false, |p| p.is_dev)
+            chain.first().is_some_and(|root| {
+                self.packages.get(root).is_some_and(|p| p.is_dev)
             })
         });
 
@@ -168,7 +168,7 @@ impl DependencyGraph {
         if self
             .packages
             .get(target_name)
-            .map_or(false, |p| p.is_direct)
+            .is_some_and(|p| p.is_direct)
         {
             return vec![vec![target_name.clone()]];
         }
@@ -197,7 +197,7 @@ impl DependencyGraph {
                 if self
                     .packages
                     .get(neighbor_name)
-                    .map_or(false, |p| p.is_direct)
+                    .is_some_and(|p| p.is_direct)
                 {
                     if !visited_paths.contains(&new_path) {
                         visited_paths.insert(new_path.clone());
